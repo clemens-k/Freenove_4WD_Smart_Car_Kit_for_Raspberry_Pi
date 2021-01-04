@@ -1,10 +1,12 @@
 import evdev
 import time
 import pprint
+
+import ADC
+import Buzzer
 import gamepad
-from Motor import *
-from servo import *
-from ADC import *
+import Motor
+import servo
 
 class ServoControl:
     
@@ -20,7 +22,7 @@ class ServoControl:
         self._ver_max = 120
 
         # handle for servor driver
-        self._pwm = Servo()
+        self._pwm = servo.Servo()
 
         self.debug = debug
 
@@ -55,11 +57,11 @@ class ServoControl:
         self._pwm.setServoPwm('1',90)
 
 
-def check_battery_low(adc, debug = False) -> bool:
-    supply_voltage = adc.recvADC(2) * 3
+def check_battery_low(adc, umin = 7, debug = False) -> bool:
+    supply_voltage = adc.recvADCAvrg(2) * 3
     if (debug):
         print(str(supply_voltage))
-    return (supply_voltage < 7)
+    return (supply_voltage < umin)
 
 
 def process_stick1(hor: float, ver: float, m: Motor):  
@@ -96,13 +98,16 @@ if __name__ == '__main__':
     myPad.set_scale(.05, 800, .95, 4095)
 
     print('Initialize motor control...')
-    myEngine = Motor()
+    myEngine = Motor.Motor()
     
     print('Initialize servo control ... ')
     myServo = ServoControl(debug = True)
 
     print('Initialize ADC Driver...')
-    myAdc = Adc()
+    myAdc = ADC.Adc()
+
+    print('Initialize Buzzer Driver...')
+    myBuzzer = Buzzer.Buzzer()
 
     try:
         print('Center camera head...')
@@ -129,8 +134,8 @@ if __name__ == '__main__':
             # read supply voltage
             if check_battery_low(myAdc):
                 print("WARNING: Battery voltage is low ( < 7.0V)! Stop Motors!")
-                # FIXME: use average battery voltage, figure out what is critical voltage for rpi and for battery
-                # disableMotor = True
+                disableMotor = True
+                myBuzzer.run('1')   # signal error
 
             # TODO: use LEDs to indicate avrg. battery voltage / charge
             # TODO: use Gamepad buttons to shutdown rpi

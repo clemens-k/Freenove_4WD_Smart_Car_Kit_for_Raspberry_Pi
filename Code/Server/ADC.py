@@ -1,5 +1,6 @@
 import smbus
 import time
+
 class Adc:
     def __init__(self):
         # Get I2C bus
@@ -20,6 +21,10 @@ class Adc:
                 self.Index="PCF8591"
             else:
                 self.Index="ADS7830" 
+
+        # Create data buffer for recvAvrg function
+        self.oldval = [None] * 8
+
     def analogReadPCF8591(self,chn):#PCF8591 read ADC value,chn:0,1,2,3
         value=[0,0,0,0,0,0,0,0,0]
         for i in range(9):
@@ -39,8 +44,9 @@ class Adc:
         voltage = value1 / 256.0 * 3.3  #calculate the voltage value
         voltage = round(voltage,2)
         return voltage
+
     def recvADS7830(self,channel):
-        """Select the Command data from the given provided value above"""
+        """Select the Command data from channel 0..7 """
         COMMAND_SET = self.ADS7830_CMD | ((((channel<<2)|(channel>>1))&0x07)<<4)
         self.bus.write_byte(self.ADDRESS,COMMAND_SET)
         while(1):
@@ -58,6 +64,18 @@ class Adc:
         elif self.Index=="ADS7830":
             data=self.recvADS7830(channel)
         return data
+    
+    def recvADCAvrg(self, channel: int, newval_weight = 0.7) -> int:
+        ''' newval_weight of 0.7 or 70% reaches 95% of target value in 3 reads'''
+        data = float(self.recvADC(channel))
+        if self.oldval[channel] != None:
+            avrgdata = (data * newval_weight) + (self.oldval[channel] * (1 - newval_weight))
+        else:
+            avrgdata = data
+        avrgdata = round(avrgdata, 3)
+        self.oldval[channel] = avrgdata
+        return avrgdata
+
     def i2cClose(self):
         self.bus.close()
 
@@ -65,7 +83,8 @@ def loop():
     adc=Adc()
     while True:
         Left_IDR=adc.recvADC(0)
-        print (Left_IDR)
+        Left_IDR_Avrg=adc.recvADCAvrg(0)
+        print ('Left IDR raw = %f, Avrg = %f' % (Left_IDR, Left_IDR_Avrg))
         Right_IDR=adc.recvADC(1)
         print (Right_IDR)
         Power=adc.recvADC(2)*3
