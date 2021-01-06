@@ -25,7 +25,6 @@ class Servo:
         elif channel=='7':
             self.PwmServo.setServoPulse(15,500+int((angle+error)/0.09))
 
-# Main program logic follows:
 if __name__ == '__main__':
     print("Now servos will rotate to 90°.") 
     print("If they have already been at 90°, nothing will be observed.")
@@ -36,11 +35,22 @@ if __name__ == '__main__':
         try :
             pwm.setServoPwm('0',90)
             pwm.setServoPwm('1',90)
+            
         except KeyboardInterrupt:
             print ("\nEnd of program")
             break
 
-    
+    print("Now you can enter custom angles to check movement")
+    while True:
+        try :
+            pwm.setServoPwm('0',int(input('Servo 0 angle:')))
+            pwm.setServoPwm('1',int(input('Servo 1 angle:')))
+            
+        except KeyboardInterrupt:
+            print ("\nEnd of program")
+            break
+                
+
 
     
        
