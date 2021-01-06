@@ -1,12 +1,16 @@
 import evdev
+import threading
 import time
 import pprint
 
 import ADC
 import Buzzer
 import gamepad
+import Led
 import Motor
 import servo
+
+disableMotor = False
 
 class ServoControl:
     
@@ -90,9 +94,21 @@ def process_stick2(hor: float, ver: float, serc: ServoControl):
     elif ver > 0.5:
         serc.rotate_vertically(-1)
 
+def monitorBattery(myAdc, myBuzzer):
+    """Runnable for monitor thread"""
+    # TODO: use LEDs to indicate avrg. battery voltage / charge
+    global disableMotor
+
+    # read supply voltage
+    if check_battery_low(myAdc):
+        print("WARNING: Battery voltage is low ( < 7.0V)! Stop Motors!")
+        disableMotor = True
+        myBuzzer.run('1')   # signal error
+
+    time.sleep(0.05)
+
 
 if __name__ == '__main__':
-
     print('Initialize gamepad control...')
     myPad = gamepad.Gamepad()
     myPad.set_scale(.05, 800, .95, 4095)
@@ -103,11 +119,16 @@ if __name__ == '__main__':
     print('Initialize servo control ... ')
     myServo = ServoControl(debug = True)
 
-    print('Initialize ADC Driver...')
-    myAdc = ADC.Adc()
-
     print('Initialize Buzzer Driver...')
     myBuzzer = Buzzer.Buzzer()
+
+    print('Initialize ADC Driver...')
+    myAdc = ADC.Adc()
+    Thread_Monitor = threading.Thread(target = monitorBattery, args=[myAdc, myBuzzer])
+    Thread_Monitor.start()
+
+    print('Initialize LED Driver...')
+    myLed = Led.Led()
 
     try:
         print('Center camera head...')
@@ -131,17 +152,11 @@ if __name__ == '__main__':
             stick2_ver = myPad.get_axis(5)
             process_stick2(stick2_hor, stick2_ver, myServo)
 
-            # read supply voltage
-            if check_battery_low(myAdc):
-                print("WARNING: Battery voltage is low ( < 7.0V)! Stop Motors!")
-                disableMotor = True
-                myBuzzer.run('1')   # signal error
 
-            # TODO: use LEDs to indicate avrg. battery voltage / charge
             # TODO: use Gamepad buttons to shutdown rpi
-            # TODO: try to use LEDs on gamepad for mode indication
             # TODO: use ultrasonic to implement "follow" mode
 
             time.sleep(0.05)
     finally:
         myEngine.stop()
+        myLed.switchOff()
