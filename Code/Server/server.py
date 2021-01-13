@@ -37,12 +37,20 @@ class Server:
         self.Mode = 'one'
         self.endChar='\n'
         self.intervalChar='#'
+
     def get_interface_ip(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        return socket.inet_ntoa(fcntl.ioctl(s.fileno(),
+        while True:
+            try: 
+                ip = socket.inet_ntoa(fcntl.ioctl(s.fileno(),
                                             0x8915,
                                             struct.pack('256s',b'wlan0'[:15])
                                             )[20:24])
+                return ip
+            except:
+                print('Waiting for ip address to be assigned to wlan0...')
+                time.sleep(1)
+
     def StartTcpServer(self):
         HOST=str(self.get_interface_ip())
         self.server_socket1 = socket.socket()
