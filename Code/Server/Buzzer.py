@@ -8,6 +8,7 @@ GPIO.setup(Buzzer_Pin,GPIO.OUT)
 
 class Buzzer:
     def run(self, command):
+        ''' pass '0' to turn off buzzer, anything else to turn on buzzer'''
         if command!="0":
             GPIO.output(Buzzer_Pin, True)
         else:

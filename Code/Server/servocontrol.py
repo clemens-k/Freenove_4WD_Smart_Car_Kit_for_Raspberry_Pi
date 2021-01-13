@@ -68,6 +68,17 @@ def check_battery_low(adc, umin = 7, debug = False) -> bool:
     return (supply_voltage < umin)
 
 
+def process_buttons(buttons: list, MyBuzzer: Buzzer, debug = False):
+    
+    # 304 = BTN_NORTH on 'Shanwan PS3 gamepad'
+    if 304 in buttons:
+        myBuzzer.run('on')
+        if debug:
+            print('BTN_NORTH')
+    else:
+        myBuzzer.run('0')
+    pass
+
 def process_stick1(hor: float, ver: float, m: Motor):  
 
     lon = int(-ver)
@@ -152,8 +163,11 @@ if __name__ == '__main__':
             stick2_ver = myPad.get_axis(5)
             process_stick2(stick2_hor, stick2_ver, myServo)
 
+            buttons = myPad.get_active_keys_raw()
+            process_buttons(buttons, myBuzzer)
 
             # TODO: use Gamepad buttons to shutdown rpi
+            # TODO: use Gamepad buttons for buzzer
             # TODO: use ultrasonic to implement "follow" mode
 
             time.sleep(0.05)

@@ -21,7 +21,7 @@ class Gamepad:
             self.gamepad = evdev.InputDevice(devicepaths[0])
         else:
             while True:
-                selection = input('Which input device shall be used (0..' + len(devicepaths) + '?')
+                selection = input('Which input device shall be used (0..' + str(len(devicepaths) - 1) + ')? ')
                 if int(selection) >= 0 and int(selection) < len(devicepaths):
                     break
             self.gamepad = evdev.InputDevice(devicepaths[int(selection)])
@@ -110,6 +110,10 @@ class Gamepad:
         else:
             return 0
 
+    def get_active_keys_raw(self) -> list:
+        "returns an array of actively pressed keys, e.g. [304, 305]"
+        return self.gamepad.active_keys()
+
     def __str__(self) -> str:
         return self.gamepad.name
 
@@ -121,6 +125,8 @@ if __name__ == '__main__':
         for a in myPad.axis:
             print('Axis %d raw value = %d, normalized = %f, scaled = %f' % 
                      (a, myPad.get_axis_raw(a), myPad.get_axis(a), myPad.get_axis_scaled(a)))
+        print('Active keys:')
+        pprint.pprint(myPad.get_active_keys_raw())
         time.sleep(1)
     
     
